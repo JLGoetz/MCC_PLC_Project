@@ -1,3 +1,5 @@
+#Designed to work with data structures and tags found in Week1.acd
+
 from pylogix import PLC
 import time
 
@@ -54,3 +56,4 @@ with PLC() as comm:
     print(f"Tag Name: {s.TagName}")
     print(f"Tag Value: {s.Value}")
     print(f"Status: {s.Status}")
+
