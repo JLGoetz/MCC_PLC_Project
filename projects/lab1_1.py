@@ -45,6 +45,8 @@ def monitor_plc():
             counter += 1
             print(f"Counter: {counter}")
             print(tag_values)
+
+            #Pause monitoring thread for 1 second before next read
             time.sleep(1)
 
 #start the monitoring thread
