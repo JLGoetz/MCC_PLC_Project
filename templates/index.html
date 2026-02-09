@@ -17,7 +17,16 @@
     </div>
 
     <div class="pole"></div>
-    <div> <h1 id="status"></h1></div>
+      <button class="reset-button" id="reset-btn">Reset Cycle & Stats</button>
+
+      <table id="stats-table">
+        <tr><th>Cycle Number</th><td id="cycle">0</td></tr>
+        <tr><th>Percent time Red</th><td id="red-pct">0.0%</td></tr>
+        <tr><th>Percent time Yellow</th><td id="yellow-pct">0.0%</td></tr>
+        <tr><th>Percent time Green</th><td id="green-pct">0.0%</td></tr>
+      </table>
+
+    <div id="status">Connecting...</div>
   </div>
   <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
 </body>
