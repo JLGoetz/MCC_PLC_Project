@@ -120,7 +120,7 @@ table {
     border-collapse: collapse;
     margin-top: 10px;
     font-size: 1.3rem;
-    background: #1a1a1a;
+    background: #bcb9b9;
     padding: 10px;
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(0,0,0,0.5);
@@ -128,7 +128,7 @@ table {
 
 th, td {
     padding: 12px 25px;
-    border: 1px solid #444;
+    border: 1px solid #696868;
     text-align: left;
 }
 
