@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Centered Stoplight</title>
+  <title>Stoplight – WebSocket</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
   <link href="{{url_for('static', filename='css/style.css')}}" rel="stylesheet"/>
 </head>
 <body>
@@ -16,7 +17,7 @@
     </div>
 
     <div class="pole"></div>
-    <div> <h1></h1></div>
+    <div> <h1 id="status"></h1></div>
   </div>
   <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
 </body>

@@ -1,64 +1,33 @@
 
 window.addEventListener("DOMContentLoaded", (event) => {
-    const evtSource = new EventSource("/stream");
+    const socket = io();
 
-    // Reset all lights
+    const lights = {
+      red:    document.getElementById('red'),
+      yellow: document.getElementById('yellow'),
+      green:  document.getElementById('green')
+    };
+
     function resetLights() {
-        let lights = ['red', 'green', 'yellow'];
-        for (const color of lights){
-            // First, get a reference to the DOM element you want to check.
-            // You can use methods like document.querySelector(), document.getElementById(), etc.
-            const element = document.querySelector(`#${color}`); 
-            // or const element = document.getElementById('myElementId');
-
-            // Check if the element variable actually found an element
-            if (element) {
-            // Use the classList.contains() method
-            const hasClass = element.classList.contains('lit');
-
-            if (hasClass) {
-                document.getElementById(color).classList.remove('lit');
-                } 
-            }
-        }
+      Object.values(lights).forEach(light => light.classList.remove('lit'));
     }
 
-    evtSource.onmessage = function(event) {
-        const active = event.data.trim();  // 'red', 'yellow', or 'green'
-        console.log("Received event: " + active);
-        resetLights();
-        
-        if (active === 'red') {
-            const element = document.getElementById('red'); 
-            if (element) {
-                document.getElementById('red').classList.add('lit');
-                const hasClass = element.classList.contains('lit');
-                console.log("Element found: " + element + ", has 'lit' class: " + hasClass);
-            } 
-        } else if (active === 'yellow') {
-            const element = document.getElementById('yellow'); 
-            if (element) {
-                document.getElementById('yellow').classList.add('lit');
-                const hasClass = element.classList.contains('lit');
-                console.log("Element found: " + element + ", has 'lit' class: " + hasClass);
-            } 
-        } else if (active === 'green') {
-            const element = document.getElementById('green'); 
-            if (element) {
-                document.getElementById('green').classList.add('lit');
-                const hasClass = element.classList.contains('lit');
-                console.log("Element found: " + element + ", has 'lit' class: " + hasClass);
-            } 
-        }
-    };
+    socket.on('connect', () => {
+      document.getElementById('status').textContent = 'Connected';
+    });
 
-    evtSource.onerror = function() {
-        console.log("SSE error – will auto-reconnect");
-        resetLights();
-        document.querySelector('h1').textContent = "Reconnecting...";
-    };
+    socket.on('light_update', (data) => {
+      const color = data.color;
+      resetLights();
 
-    evtSource.onopen = function() {
-        document.querySelector('h1').textContent = "Live Traffic Light";
-    };
+      if (lights[color]) {
+        lights[color].classList.add('lit');
+        document.getElementById('status').textContent = `Active: ${color.toUpperCase()}`;
+      }
+    });
+
+    socket.on('disconnect', () => {
+      document.getElementById('status').textContent = 'Disconnected – reconnecting...';
+      resetLights();
+    });
 });
