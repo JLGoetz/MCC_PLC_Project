@@ -20,9 +20,6 @@ window.addEventListener("DOMContentLoaded", (event) => {
                 document.getElementById(color).classList.remove('lit');
                 } 
             }
-        //document.getElementById('red').classList.remove('lit');
-        //document.getElementById('yellow').classList.remove('lit');
-        //document.getElementById('green').classList.remove('lit');
         }
     }
 

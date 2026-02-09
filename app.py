@@ -1,47 +1,54 @@
-from flask import Flask, render_template, Response
+from flask import Flask, render_template
+from flask_socketio import SocketIO, emit
 import time
-import random
+import threading
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'stoplight-secret-key'
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-def event_stream():
-    """Generator that yields the currently active light every few seconds"""
-    states = ['red', 'green', 'yellow']  # order: red → green → yellow → repeat
+# Background thread to cycle through stoplight states
+def stoplight_cycle():
+    states = [
+        ('red',    7),   # red for ~7 seconds
+        ('green',  6),   # green for ~6 seconds
+        ('yellow', 3)    # yellow for ~3 seconds
+    ]
     current_index = 0
 
     while True:
-        active_light = states[current_index]
+        color, duration = states[current_index]
+        # Broadcast the active light to all connected clients
+        socketio.emit('light_update', {'color': color})
+        print(f"Active light: {color}")
         
-        # Send the active light color
-        yield f"data: {active_light}\n\n"
-        
-        # Simulate realistic timing
-        if active_light == 'red':
-            sleep_time = 7    # red stays longest
-        elif active_light == 'green':
-            sleep_time = 6
-        else:  # yellow
-            sleep_time = 3
-        
-        time.sleep(sleep_time)
+        time.sleep(duration)
         
         # Move to next state
         current_index = (current_index + 1) % len(states)
 
-@app.route('/stream')
-def stream():
-    return Response(
-        event_stream(),
-        mimetype='text/event-stream',
-        headers={
-            'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no'
-        }
-    )
+# Start the background thread only once
+thread = None
+thread_lock = threading.Lock()
+
+@app.route('/')
+def index():
+    global thread
+    with thread_lock:
+        if thread is None:
+            thread = socketio.start_background_task(stoplight_cycle)
+    return render_template('index.html')
+
+# Optional: handle client connection / disconnection
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
+    # Optionally send current state immediately on connect
+    # (you could keep track of current color in a global var if desired)
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected')
 
 if __name__ == '__main__':
-    app.run(debug=True, threaded=True)
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
