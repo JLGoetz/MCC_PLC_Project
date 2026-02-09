@@ -14,7 +14,7 @@ PLC_IP = os.getenv('STATION1_IP')
 print(f"Connecting to PLC at IP: {PLC_IP}")
 
 #Create list of tags of interest to monitor
-tags_to_monitor = ['Program:MainProgram.Red_Light', 'Program:MainProgram.Green_Light', 'Program:MainProgram.Yellow_Light', 'Program:MainProgram.Red_Pct', 'Program:MainProgram.Green_Pct', 'Program:MainProgram.Yellow_Pct', '']
+tags_to_monitor = ['Program:MainProgram.Red_Light', 'Program:MainProgram.Green_Light', 'Program:MainProgram.Yellow_Light', 'Program:MainProgram.Red_Pct', 'Program:MainProgram.Green_Pct', 'Program:MainProgram.Yellow_Pct', 'Program:MainProgram.Cycle_Timer.ACC', 'Program:MainProgram.Traffc_Timer.ACC']
 
 #Create empty dictionary to store tag values
 tag_values = {}
