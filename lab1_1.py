@@ -75,8 +75,8 @@ def show_menu():
     print(f"\n" + "="*40)
     print(f"    Simple Menu Program")
     print(f"="*40)
-    print(f"1.  Option 1")
-    print(f"2.  Option 2")
+    print(f"1.  Get Current Tag Values")
+    print(f"2.  Reset Tags")
     print(f"3.  Exit")
     print("="*40)
 
