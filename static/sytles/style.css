@@ -1,0 +1,99 @@
+ body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    background: #222;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0; /* no extra space between light and pole */
+}
+
+.traffic-light {
+    width: 220px;
+    height: 520px;
+    background: #111;
+    border-radius: 40px;
+    padding: 20px;
+    box-shadow: 
+    0 0 30px rgba(0,0,0,0.9),
+    inset 0 5px 15px rgba(255,255,255,0.1);
+    border: 8px solid #000;
+    position: relative;
+    z-index: 2;
+}
+
+.light {
+    width: 160px;
+    height: 160px;
+    margin: 20px auto;
+    border-radius: 50%;
+    position: relative;
+    border: 8px solid #000;
+    box-shadow: 
+    inset 0 10px 25px rgba(0,0,0,0.7),
+    0 0 30px rgba(0,0,0,0.5);
+}
+
+.red    { background: #800000; }
+.yellow { background: #8b6f00; }
+.green  { background: #006400; }
+
+/* Glowing / lit effect */
+.red.lit    { 
+    background: radial-gradient(circle at 30% 30%, #ff4d4d, #c40000 60%, #800000);
+    box-shadow: 
+    0 0 40px #ff0000,
+    0 0 80px #ff0000aa,
+    inset 0 10px 25px rgba(0,0,0,0.6);
+}
+
+.yellow.lit { 
+    background: radial-gradient(circle at 30% 30%, #ffff4d, #e6c300 60%, #8b6f00);
+    box-shadow: 
+    0 0 40px #ffff00,
+    0 0 80px #ffff00aa,
+    inset 0 10px 25px rgba(0,0,0,0.6);
+}
+
+.green.lit  { 
+    background: radial-gradient(circle at 30% 30%, #4dff4d, #00c400 60%, #006400);
+    box-shadow: 
+    0 0 40px #00ff00,
+    0 0 80px #00ff00aa,
+    inset 0 10px 25px rgba(0,0,0,0.6);
+}
+
+/* Small top cap */
+.traffic-light::before {
+    content: "";
+    position: absolute;
+    width: 80px;
+    height: 30px;
+    background: #222;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 15px 15px 0 0;
+    border: 8px solid #000;
+    border-bottom: none;
+    z-index: 2;
+}
+
+/* Pole */
+.pole {
+    width: 60px;
+    height: 180px;
+    background: #111;
+    border: 8px solid #000;
+    border-top: none;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.7);
+    z-index: 1;
+}
