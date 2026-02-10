@@ -108,7 +108,7 @@ def main():
             else:
                 stop_event.clear()  # reset event
                 background_thread = threading.Thread(
-                    target=background_task,
+                    target=monitor_plc,
                     args=(stop_event,),
                     daemon=True
                 )
