@@ -122,7 +122,27 @@ def main():
                 stop_event.set()
                 background_thread.join(timeout=1.5)  # give it a moment to finish
                 print("→ Background thread stopped.")
-                background_thread = None  # allow restart
+                print("→ Attempting to reset PLC tags...")
+            
+                # 1. Write the Reset_PB tag to the PLC
+                # We open a brief connection specifically for the write command
+                with PLC() as comm:
+                    comm.IPAddress = '10.22.128.92'
+                    # Write True to trigger the reset, then False to release (momentary pulse)
+                    comm.Write('Program:MainProgram.Reset_All', True)
+                    time.sleep(0.2) # Short delay to ensure PLC registers the pulse
+                    comm.Write('Program:MainProgram.Reset_All', False)
+                    print("→ Reset signal sent to 'Program:MainProgram.Reset_PB'.")
+
+                background_thread = None  # allow restart of background thread
+                stop_event.clear()  # reset event
+                background_thread = threading.Thread(
+                    target=monitor_plc,
+                    args=(stop_event,),
+                    daemon=True
+                )
+                background_thread.start()
+                print("→ Background thread started.")
 
         elif choice == "3":
             print("\nShutting down...")
