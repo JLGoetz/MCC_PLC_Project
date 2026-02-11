@@ -6,160 +6,109 @@ import threading
 import sys
 
 
-#Create done variable to control the monitoring thread
-done = False
-
-#Load Environment Variables and set PLC IP address
+# Load Environment Variables
 load_dotenv()
-PLC_IP = os.getenv('UNIT_7')
-print(f"{PLC_IP}")
-print(f"Connecting to PLC at IP: {PLC_IP}")
+PLC_IP = os.getenv('UNIT_7', '10.22.128.92') # Fallback to hardcoded if .env missing
 
-#Create list of tags of interest to monitor
-tags_to_monitor = ['Program:MainProgram.Red_Light', 'Program:MainProgram.Green_Light', 'Program:MainProgram.Yellow_Light', 'Program:MainProgram.Red_Pct', 'Program:MainProgram.Green_Pct', 'Program:MainProgram.Yellow_Pct', 'Program:MainProgram.Cycle_Timer.ACC', 'Program:MainProgram.Traffc_Timer.ACC']
+class PLCController:
+    def __init__(self, ip_address):
+        self.ip_address = ip_address
+        self.tag_values = {}
+        self.lock = threading.Lock() # Ensures thread-safe dictionary updates
 
-#Create empty dictionary to store tag values
-tag_values = {}
-
-#Set init variable to indicate initial connection to PLC
-initial_connection = True   
-
-#Define counter
-counter = 0
-
-#define a function to monitor the PLC tag in a separate thread
-def monitor_plc(stop_event):
-    global initial_connection
-    global counter
-    global tags_to_monitor
-    global tag_values
-
-    print(f"Background montioring initialized.")
-    #Use context manager to ensure proper connection handling
-    while not stop_event.is_set():
+    def read_batch(self, tags):
+        """Reads a list of tags and updates the local dictionary."""
         with PLC() as comm:
-            comm.IPAddress = '10.22.128.92'
-            #print(f"Connected to PLC at IP: {comm.IPAddress}")
-            ret = comm.GetTagList()
-            '''
-            # Check for any errors in retrieving the list
-            if ret.Status == 'Success':
-                # Iterate over the list of tags and print their names
-                for tag in ret.Value:
-                    print(tag.TagName)
-            else:
-                print(f"Error retrieving tag list: {ret.Status}")
-            '''
-            #Read tags that need to be monitored
-            for item in tags_to_monitor:
-                #print(f"{item}")
-                t = comm.Read(item)
-                if initial_connection == True:
-                    tag_values[item] = t.Value
+            comm.IPAddress = self.ip_address
+            for tag in tags:
+                ret = comm.Read(tag)
+                if ret.Status == 'Success':
+                    with self.lock:
+                        self.tag_values[tag] = ret.Value
                 else:
-                    tag_values.update({item: t.Value})
-            #Set initial connection to false after first read 
-            initial_connection = False
-            #Increment counter and print tag values
-            counter += 1
-            #print(f"Counter: {counter}")
-            #print(tag_values)
+                    print(f"\n[Error] Could not read {tag}: {ret.Status}")
+        return self.tag_values
 
-            #Pause monitoring thread for 1 second before next read
-            time.sleep(1)
+    def write_tag(self, tag, value):
+        """Writes a value to a specific tag."""
+        with PLC() as comm:
+            comm.IPAddress = self.ip_address
+            ret = comm.Write(tag, value)
+            return ret.Status == 'Success'
 
-    print(f"Background process stopped.")
+# --- Configuration ---
+tags_to_monitor = [
+    'Program:MainProgram.Red_Light', 
+    'Program:MainProgram.Green_Light', 
+    'Program:MainProgram.Yellow_Light', 
+    'Program:MainProgram.Red_Pct', 
+    'Program:MainProgram.Green_Pct', 
+    'Program:MainProgram.Yellow_Pct', 
+    'Program:MainProgram.Cycle_Timer.ACC', 
+    'Program:MainProgram.Traffc_Timer.ACC', 
+    'Program:MainProgram.Reset_PB'
+]
+
+# Initialize Controller
+plc = PLCController(PLC_IP)
+
+def monitor_worker(stop_event):
+    """Background loop for continuous monitoring."""
+    print(f"\n[System] Background monitoring started for {plc.ip_address}")
+    while not stop_event.is_set():
+        plc.read_batch(tags_to_monitor)
+        time.sleep(1)
+    print("\n[System] Background process stopped.")
 
 def show_menu():
-    """Display Menu Options"""
     print(f"\n" + "="*40)
-    print(f"    Simple Menu Program")
+    print(f"      PLC Management Console")
+    print(f"      Target: {PLC_IP}")
     print(f"="*40)
-    print(f"1.  Get Current Tag Values")
-    print(f"2.  Reset Tags")
+    print(f"1.  View Current Tag Values")
+    print(f"2.  Pulse Reset Push Button (Reset_PB)")
     print(f"3.  Exit")
     print("="*40)
 
 def main():
     stop_event = threading.Event()
-
-    #Start background thread
-    background_thread = threading.Thread(target=monitor_plc, args=(stop_event,), daemon=True) 
-    #daemon shuts down thread when program stops
-    background_thread.start()
-
-    print("Program started. A background thread can be controlled via menu.")
+    bg_thread = threading.Thread(target=monitor_worker, args=(stop_event,), daemon=True)
+    bg_thread.start()
 
     while True:
         show_menu()
-
-        try:
-            choice = input("Enter your choice (1-3): ").strip()
-        except KeyboardInterrupt:
-            print(f"\nInterrupted by user. Exiting...")
-            stop_event.set()
-            background_thread.join(timeout=1.0)
-            sys.exit(0)
+        choice = input("Enter selection (1-3): ").strip()
 
         if choice == "1":
-            if background_thread is not None and background_thread.is_alive():
-                print("→ Background thread is already running.")
-                print(tag_values)
-            else:
-                stop_event.clear()  # reset event
-                background_thread = threading.Thread(
-                    target=monitor_plc,
-                    args=(stop_event,),
-                    daemon=True
-                )
-                background_thread.start()
-                print("→ Background thread started.")
+            print("\n--- Current PLC Data ---")
+            with plc.lock:
+                if not plc.tag_values:
+                    print("No data received yet...")
+                for tag, val in plc.tag_values.items():
+                    print(f"{tag.split('.')[-1]:<15}: {val}")
 
         elif choice == "2":
-            if background_thread is None or not background_thread.is_alive():
-                print("→ No background thread is running.")
+            print("\n→ Sending Reset Pulse...")
+            # Pulse Logic: True then False
+            if plc.write_tag('Program:MainProgram.Reset_PB', True):
+                time.sleep(0.5)
+                plc.write_tag('Program:MainProgram.Reset_PB', False)
+                print("→ Reset_PB pulsed successfully.")
             else:
-                stop_event.set()
-                background_thread.join(timeout=1.5)  # give it a moment to finish
-                print("→ Background thread stopped.")
-                print("→ Attempting to reset PLC tags...")
-            
-                # 1. Write the Reset_PB tag to the PLC
-                # We open a brief connection specifically for the write command
-                with PLC() as comm:
-                    comm.IPAddress = '10.22.128.92'
-                    # Write True to trigger the reset, then False to release (momentary pulse)
-                    comm.Write('Program:MainProgram.Reset_All', True)
-                    time.sleep(0.2) # Short delay to ensure PLC registers the pulse
-                    comm.Write('Program:MainProgram.Reset_All', False)
-                    print("→ Reset signal sent to 'Program:MainProgram.Reset_PB'.")
-
-                background_thread = None  # allow restart of background thread
-                stop_event.clear()  # reset event
-                background_thread = threading.Thread(
-                    target=monitor_plc,
-                    args=(stop_event,),
-                    daemon=True
-                )
-                background_thread.start()
-                print("→ Background thread started.")
+                print("→ Failed to communicate with PLC for Reset.")
 
         elif choice == "3":
             print("\nShutting down...")
-            if background_thread is not None and background_thread.is_alive():
-                stop_event.set()
-                background_thread.join(timeout=1.0)
+            stop_event.set()
+            bg_thread.join(timeout=1.0)
             print("Goodbye!")
-            sys.exit(0)
-
+            break
         else:
-            print("\nInvalid choice. Please enter 1, 2, or 3.")
-
-        # Small pause so output doesn't feel too rushed
-        time.sleep(0.5)
+            print("\nInvalid selection.")
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print(f"\nProgram Termintated by User.")
+        print("\nProcess terminated by user.")
+        sys.exit(0)
