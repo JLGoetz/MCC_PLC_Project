@@ -22,23 +22,15 @@ def discover_plc_slot(ip):
         
         print(f"Connected to: {device.Value.ProductName}")
         print(f"Revision: {device.Value.Revision}")
+        print(dir(device.Value))
 
-        # Step 2: Scan the backplane for a Controller module
-        # This returns all modules in the rack/chassis
-        print("Scanning backplane for Processor...")
-        modules = comm.GetModuleProperties()
-        
-        if modules.Status == 'Success':
-            print(modules)
-            for module in modules.Value:
-                # We look for "Logix" in the product name (ControlLogix, CompactLogix)
-                if 'Logix' in module.ProductName or '55' in module.ProductName or '53' in module.ProductName:
-                    print(f"\n>>> SUCCESS: Found Processor '{module.ProductName}' in Slot {module.Slot}")
-                    return module.Slot
-            
-            print("\n[Warning] Reached device, but no Logix processor was identified in the module list.")
-        else:
-            print(f"[Error] Could not retrieve module list: {modules.Status}")
+        devices = comm.Discover()
+        for device in devices.Value:
+            devices = comm.Discover()
+    for device in devices.Value:
+            if '1769-L27ERM-QxC1B/A' in device.ProductName:
+                print(device.ProductName, device.Revision, device.IPAddress)
+
             
     return None
 
