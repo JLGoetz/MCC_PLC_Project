@@ -8,25 +8,35 @@ import sys
 
 # Load Environment Variables
 load_dotenv()
-PLC_IP = os.getenv('UNIT_7', '10.22.128.92') # Fallback to hardcoded if .env missing
+#PLC_IP = os.getenv('UNIT_7', '10.22.128.92') # Fallback to hardcoded if .env missing
+PLC_IP ='10.22.128.92'
 
 class PLCController:
-    def __init__(self, ip_address):
-        self.ip_address = ip_address
+    def __init__(self, ip_address, slot=0):
+        self.ip_address = ip_address.strip().replace('"', '').replace("'", "") if ip_address else None
+        self.slot = slot # Default for most Allen-Bradley PLCs
         self.tag_values = {}
         self.lock = threading.Lock() # Ensures thread-safe dictionary updates
 
     def read_batch(self, tags):
+        if not self.ip_address: return
+
         """Reads a list of tags and updates the local dictionary."""
         with PLC() as comm:
             comm.IPAddress = self.ip_address
+            comm.ProcessorSlot = self.slot # Explicitly set the slot
+            comm.SocketTimeout = 5000           # Increase timeout to 5 seconds
+            
             for tag in tags:
                 ret = comm.Read(tag)
                 if ret.Status == 'Success':
                     with self.lock:
                         self.tag_values[tag] = ret.Value
                 else:
-                    print(f"\n[Error] Could not read {tag}: {ret.Status}")
+                    # This will help us see if it's a specific tag or a connection loss
+                    print(f"\n[Error] {self.ip_address} failed on {tag}: {ret.Status}")
+                    if "timed out" in ret.Status.lower():
+                        break # Stop trying other tags if the first one timed out
         return self.tag_values
 
     def write_tag(self, tag, value):
@@ -50,7 +60,7 @@ tags_to_monitor = [
 ]
 
 # Initialize Controller
-plc = PLCController(PLC_IP)
+plc = PLCController(PLC_IP, 1)
 
 def monitor_worker(stop_event):
     """Background loop for continuous monitoring."""
